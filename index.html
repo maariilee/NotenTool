@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1F46D6">
+<title>Schulnoten</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF0F6; --surface:#FFFFFF; --ink:#101828; --muted:#5A6479; --line:#DCE1EB;
+  --accent:#1F46D6; --accent-ink:#FFFFFF; --hero-bg:#1F46D6; --hero-ink:#FFFFFF;
+  --hero-muted:rgba(255,255,255,.8); --hero-chip:rgba(255,255,255,.17);
+  --bad:#C42B2B; --soft:#E5EAF6; --scrim:rgba(10,15,30,.5);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C111D; --surface:#161D2E; --ink:#EDF0F8; --muted:#9BA6BC; --line:#263048;
+    --accent:#7A97FF; --accent-ink:#0B1230; --hero-bg:#1B2B6B; --hero-ink:#FFFFFF;
+    --hero-muted:rgba(255,255,255,.78); --hero-chip:rgba(255,255,255,.14);
+    --bad:#FF8080; --soft:#212B44; --scrim:rgba(0,0,0,.6);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C111D; --surface:#161D2E; --ink:#EDF0F8; --muted:#9BA6BC; --line:#263048;
+  --accent:#7A97FF; --accent-ink:#0B1230; --hero-bg:#1B2B6B; --hero-ink:#FFFFFF;
+  --hero-muted:rgba(255,255,255,.78); --hero-chip:rgba(255,255,255,.14);
+  --bad:#FF8080; --soft:#212B44; --scrim:rgba(0,0,0,.6);
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:inherit}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%;background:var(--bg)}
+html.locked,html.locked body{overflow:hidden}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.4 Figtree,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.hero :focus-visible{outline-color:#fff}
+
+.wrap{max-width:560px;margin:0 auto;padding:12px 12px 120px}
+
+/* Kopfzeile */
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
+.semBtn{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 16px;border:0;border-radius:999px;background:var(--surface);color:var(--ink);font-weight:700;font-size:16px;max-width:calc(100% - 60px)}
+.semBtn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.iconBtn{width:48px;height:48px;border:0;border-radius:50%;background:var(--surface);color:var(--ink);display:grid;place-items:center;flex:none}
+
+/* Dashboard */
+.dash{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{position:relative;display:flex;flex-direction:column;align-items:flex-start;width:100%;min-height:172px;padding:20px 14px 14px;text-align:left;background:var(--surface);border:0;border-radius:22px;overflow:hidden}
+.tile::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:var(--c)}
+.tile .nm{font-weight:700;font-size:16px;line-height:1.2}
+.tile .avg{margin-top:auto;padding-top:10px;font-family:"Bricolage Grotesque",Figtree,system-ui,sans-serif;font-weight:800;font-size:54px;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.tile .avg.none{color:var(--muted)}
+.tile .sub{margin-top:6px;font-size:13.5px;color:var(--muted);line-height:1.3}
+.tile .sub+.sub{margin-top:0}
+.bad{color:var(--bad)}
+.empty{color:var(--muted);font-size:14px}
+
+.warn{margin:0 0 12px;padding:10px 14px;border-radius:14px;background:var(--soft);font-size:14px}
+
+/* Untere Leiste */
+.bottombar{position:fixed;left:0;right:0;bottom:0;padding:16px 12px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,var(--bg) 65%,transparent);z-index:10}
+.bottombar .primary{display:block;max-width:536px;margin:0 auto}
+
+.primary,.secondary,.danger{display:block;width:100%;min-height:56px;border-radius:18px;border:0;font-weight:700;font-size:17px}
+.primary{background:var(--accent);color:var(--accent-ink)}
+.primary:disabled{opacity:.4;cursor:not-allowed}
+.secondary{background:var(--soft);color:var(--ink);min-height:52px;font-size:16px;font-weight:600}
+.danger{background:transparent;color:var(--bad);font-size:16px;font-weight:600;min-height:48px}
+
+/* Sheets */
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:20}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;max-height:92vh;max-height:92dvh;overflow-y:auto;overscroll-behavior:contain;background:var(--surface);border-radius:28px 28px 0 0;padding:10px 18px calc(20px + env(safe-area-inset-bottom,0px));z-index:21;animation:up .22s ease-out;outline:none}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion: reduce){.sheet{animation:none}.toast{transition:none}}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 12px}
+.sh-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px}
+.sheet h2{margin:0;font-family:"Bricolage Grotesque",Figtree,system-ui,sans-serif;font-weight:800;font-size:26px;letter-spacing:-.02em;line-height:1.15}
+.x{width:44px;height:44px;border-radius:50%;border:0;background:var(--soft);display:grid;place-items:center;flex:none}
+.lbl{display:block;margin:18px 0 8px;font-weight:600;font-size:14.5px;color:var(--muted)}
+.hint{margin-top:8px;font-size:13.5px;color:var(--muted)}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip,.seg button{min-height:46px;padding:0 15px;border-radius:14px;border:1.5px solid var(--line);background:transparent;font-weight:600;font-size:15.5px}
+.chip.on,.seg button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px}
+.seg button{padding:0;min-height:52px;font-size:17px}
+
+.seg.w4 button{font-size:15px;padding:0 2px}
+.lbl2{margin-top:14px}
+input.on{border-color:var(--accent)}
+.sel{position:relative}
+.sel::after{content:"";position:absolute;right:20px;top:50%;width:9px;height:9px;border-right:2.5px solid var(--muted);border-bottom:2.5px solid var(--muted);transform:translateY(-72%) rotate(45deg);pointer-events:none}
+select,input[type=text],input[type=date],textarea{width:100%;min-height:54px;padding:0 16px;border-radius:14px;border:1.5px solid var(--line);background:var(--bg);font-size:18px;appearance:none;-webkit-appearance:none}
+select{padding-right:44px;font-weight:600}
+textarea{min-height:140px;padding:12px 14px;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace;line-height:1.4;resize:vertical}
+input[type=text],input[type=date]{font-size:17px}
+details{margin-top:16px}
+summary{min-height:44px;display:flex;align-items:center;font-weight:600;font-size:15px;color:var(--muted);cursor:pointer}
+details .fields{display:grid;gap:10px;padding-top:4px}
+.actions{display:grid;gap:8px;margin-top:22px}
+.inline{display:grid;grid-template-columns:1fr auto;gap:8px}
+.inline .secondary{width:auto;padding:0 18px}
+
+/* Fach-Detail */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.stats>div{background:var(--bg);border-radius:18px;padding:14px 16px}
+.statv{font-family:"Bricolage Grotesque",Figtree,system-ui,sans-serif;font-weight:800;font-size:40px;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.statl{margin-top:6px;font-size:13.5px;color:var(--muted)}
+.g{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;border-top:1px solid var(--line)}
+.gl .g:first-child{border-top:0}
+.gmain{display:grid;grid-template-columns:66px 1fr;gap:8px;align-items:center;min-height:62px;padding:8px 0;text-align:left;background:none;border:0}
+.g .n{font-family:"Bricolage Grotesque",Figtree,system-ui,sans-serif;font-weight:800;font-size:30px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.g .t{font-weight:500;font-size:16px}
+.g .d{font-size:13.5px;color:var(--muted)}
+.g .w{font-size:13px;font-weight:600;color:var(--muted);background:var(--soft);border-radius:999px;padding:4px 10px}
+.gdel{min-width:48px;height:48px;padding:0 10px;border:0;border-radius:14px;background:var(--soft);color:var(--bad);display:grid;place-items:center;font-weight:700;font-size:14px}
+.gdel[data-armed="1"]{background:var(--bad);color:var(--surface)}
+.semRow{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:54px;padding:0 16px;margin-bottom:8px;border-radius:14px;border:1.5px solid var(--line);background:transparent;text-align:left;font-weight:600;font-size:16px}
+.semRow.on{border-color:var(--accent);background:var(--soft)}
+
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translate(-50%,10px);max-width:calc(100% - 32px);padding:12px 18px;border-radius:14px;background:var(--ink);color:var(--bg);font-weight:600;font-size:15px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:40;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div id="sheetRoot"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+var KEY = "schulnoten-app-v1";
+var W = {ganz:1, halb:0.5, drittel:1/3, viertel:0.25};
+var WNAMES = ["ganz","halb","drittel","viertel"];
+var WLBL = {ganz:"ganz", halb:"halb", drittel:"1/3", viertel:"viertel"};
+function weightOf(g){ return g.w==="custom" ? (g.wv>0 ? g.wv : 1) : (W[g.w]!=null ? W[g.w] : 1); }
+function wLabel(g){ return g.w==="custom" ? "×"+fmtNote(g.wv) : (WLBL[g.w] || "ganz"); }
+function parseWeight(str){
+  var s = String(str||"").trim().replace(",","."); if(!s) return null;
+  var v;
+  if(s.indexOf("/")>-1){ var p=s.split("/"); if(p.length!==2) return null; var a=Number(p[0]), b=Number(p[1]); v = b ? a/b : NaN; }
+  else v = Number(s);
+  return isFinite(v) && v>0 && v<=100 ? v : null;
+}
+var NIV = ["–","g","m","e"];
+var NIVTXT = {"–":"Kein Niveau","g":"Grundlegende Anforderungen","m":"Mittlere Anforderungen","e":"Erhöhte Anforderungen"};
+var COLORS = ["#D2543B","#2F6FB5","#7A5FB8","#1F8F7B","#7F9A22","#C08A2E"];
+var NOTES = []; for (var i = 24; i >= 4; i--) NOTES.push(i/4);   // 6, 5.75 … 1
+
+var storageOK = true;
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];}); }
+function fmtNote(n){ return String(+Number(n).toFixed(2)); }
+function fmtDate(d){ if(!d) return ""; var p=d.split("-"); return p.length===3 ? p[2]+"."+p[1]+"."+p[0] : d; }
+
+/* ---------- Daten ---------- */
+function defaultState(){
+  var subj = [
+    ["Deutsch","e"],["Französisch","e"],["Englisch","e"],
+    ["Mathematik","m"],["Natur und Technik","–"],["Räume Zeiten Gesellschaften","–"]
+  ].map(function(x){ return {id:uid(), name:x[0], niveau:x[1], grades:[]}; });
+  var sid = uid();
+  return {v:1, cur:sid, last:subj[0].id, sems:[{id:sid, name:"1. Semester 26/27", subjects:subj}]};
+}
+function valid(s){
+  return s && Array.isArray(s.sems) && s.sems.length && s.sems.every(function(m){
+    return m && typeof m.name==="string" && Array.isArray(m.subjects) && m.subjects.every(function(x){
+      return x && typeof x.name==="string" && Array.isArray(x.grades);
+    });
+  });
+}
+function load(){
+  try{
+    var raw = localStorage.getItem(KEY);
+    if(raw){ var s = JSON.parse(raw); if(valid(s)){ if(!s.sems.some(function(m){return m.id===s.cur;})) s.cur=s.sems[0].id; return s; } }
+  }catch(e){ storageOK = false; }
+  return defaultState();
+}
+var S = load();
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch(e){ if(storageOK){ storageOK=false; render(); } }
+}
+save();
+
+function curSem(){ return S.sems.filter(function(m){return m.id===S.cur;})[0] || S.sems[0]; }
+function getSubj(id){ return curSem().subjects.filter(function(s){return s.id===id;})[0]; }
+
+function avg(s){
+  var sum=0, f=0;
+  s.grades.forEach(function(g){ var w=weightOf(g); sum+=g.note*w; f+=w; });
+  return f>0 ? sum/f : null;
+}
+function zeugnis(a){ return Math.round(a*2 + 1e-9)/2; }
+
+/* ---------- UI-Zustand ---------- */
+var ui = {sheet:null};
+var app = document.getElementById("app");
+var sheetRoot = document.getElementById("sheetRoot");
+var toastEl = document.getElementById("toast");
+var toastTimer;
+function toast(msg){
+  toastEl.textContent = msg; toastEl.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(function(){ toastEl.classList.remove("show"); }, 2400);
+}
+
+var ICON_CHEV = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+var ICON_SAVE = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>';
+var ICON_X = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+var ICON_TRASH = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3"/></svg>';
+var ICON_OK = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+/* ---------- Hauptansicht ---------- */
+function render(){
+  var sem = curSem();
+  var html = "";
+  if(!storageOK) html += '<p class="warn">Speichern im Browser ist hier nicht möglich. Die Noten gehen beim Schliessen verloren. Nutze „Daten sichern“.</p>';
+  html += '<div class="top">' +
+      '<button class="semBtn" data-act="semester" aria-label="Semester wechseln"><span>'+esc(sem.name)+'</span>'+ICON_CHEV+'</button>' +
+      '<button class="iconBtn" data-act="backup" aria-label="Daten sichern">'+ICON_SAVE+'</button>' +
+    '</div>';
+  html += '<div class="dash">';
+  sem.subjects.forEach(function(s,i){
+    var a = avg(s);
+    html += '<button class="tile" data-act="open" data-id="'+s.id+'" style="--c:'+COLORS[i%COLORS.length]+'">' +
+      '<span class="nm">'+esc(s.name)+'</span>' +
+      '<span class="avg'+(a===null?' none':(a<4?' bad':''))+'">'+(a===null?"–":a.toFixed(2))+'</span>' +
+      '<span class="sub">'+(a===null?"Noch keine Note":"Zeugnis "+fmtNote(zeugnis(a)))+'</span>' +
+      '<span class="sub">'+s.grades.length+(s.grades.length===1?" Note":" Noten")+(s.niveau!=="–"?" · Niveau "+s.niveau:"")+'</span>' +
+    '</button>';
+  });
+  html += '</div>';
+  app.innerHTML = html;
+
+  if(!document.getElementById("bottombar")){
+    var b = document.createElement("div");
+    b.id="bottombar"; b.className="bottombar";
+    b.innerHTML = '<button class="primary" data-act="add">Note eintragen</button>';
+    document.body.appendChild(b);
+  }
+}
+
+/* ---------- Sheets ---------- */
+function renderSheet(){
+  var sh = ui.sheet;
+  if(!sh){ sheetRoot.innerHTML=""; document.documentElement.classList.remove("locked"); return; }
+  var body = sh.type==="add" ? addSheet() : sh.type==="subject" ? subjectSheet() : sh.type==="semester" ? semSheet() : backupSheet();
+  sheetRoot.innerHTML = body;
+  document.documentElement.classList.add("locked");
+  var el = sheetRoot.querySelector(".sheet");
+  if(el){ el.setAttribute("tabindex","-1"); try{ el.focus({preventScroll:true}); }catch(e){} }
+  if(sh.type==="add") syncSave();
+}
+function refresh(){ render(); renderSheet(); }
+
+function addSheet(){
+  var f = ui.sheet.form, sem = curSem();
+  var chips = sem.subjects.map(function(s){
+    return '<button type="button" class="chip'+(s.id===f.subj?' on':'')+'" data-act="pickSubj" data-id="'+s.id+'" aria-pressed="'+(s.id===f.subj)+'">'+esc(s.name)+'</button>';
+  }).join("");
+  var opts = '<option value="">Note wählen</option>' + NOTES.map(function(n){
+    return '<option value="'+n+'"'+(String(f.note)===String(n)?' selected':'')+'>'+fmtNote(n)+'</option>';
+  }).join("");
+  var wbtn = WNAMES.map(function(w){
+    return '<button type="button" class="'+(f.w===w?'on':'')+'" data-act="pickW" data-id="'+w+'" aria-pressed="'+(f.w===w)+'">'+WLBL[w]+'</button>';
+  }).join("");
+  var edit = !!f.edit;
+  return '<div class="scrim" data-act="close"></div>' +
+  '<div class="sheet" role="dialog" aria-modal="true" aria-label="'+(edit?"Note bearbeiten":"Note eintragen")+'">' +
+    '<div class="grab"></div>' +
+    '<div class="sh-head"><h2>'+(edit?"Note bearbeiten":"Note eintragen")+'</h2><button class="x" data-act="close" aria-label="Schliessen">'+ICON_X+'</button></div>' +
+    '<div class="lbl">Fach</div><div class="chips">'+chips+'</div>' +
+    '<label class="lbl" for="fNote">Note</label><div class="sel"><select id="fNote" data-f="note">'+opts+'</select></div>' +
+    '<div class="lbl">Gewicht</div><div class="seg w4">'+wbtn+'</div>' +
+    '<label class="lbl lbl2" for="fWc">Oder eigenes Gewicht</label>' +
+    '<input type="text" id="fWc" data-f="wc" inputmode="decimal" autocomplete="off" placeholder="z. B. 0.4 oder 2/5" maxlength="10" value="'+esc(f.wc)+'" class="'+(f.w==="custom"?"on":"")+'">' +
+    '<div class="hint" id="wHint" hidden>Gib eine Zahl grösser als 0 ein, z. B. 0.4 oder 2/5.</div>' +
+    '<details'+((f.title||f.date)?' open':'')+'><summary>Name und Datum (optional)</summary><div class="fields">' +
+      '<input type="text" data-f="title" placeholder="z. B. Vokabeltest" maxlength="60" value="'+esc(f.title)+'" aria-label="Name der Prüfung">' +
+      '<input type="date" data-f="date" value="'+esc(f.date)+'" aria-label="Datum">' +
+    '</div></details>' +
+    '<div class="actions">' +
+      '<button class="primary" id="saveBtn" data-act="save">'+(edit?"Änderung speichern":"Speichern")+'</button>' +
+      (edit ? '<button class="danger" data-act="delGrade" data-arm="Wirklich löschen?">Note löschen</button>'
+            : '<button class="secondary" id="moreBtn" data-act="saveMore">Speichern und weitere Note</button>') +
+    '</div>' +
+  '</div>';
+}
+function syncSave(){
+  var f = ui.sheet && ui.sheet.form; if(!f) return;
+  var wbad = f.w==="custom" && parseWeight(f.wc)===null;
+  var ok = f.note !== "" && !wbad;
+  var hint = document.getElementById("wHint"); if(hint) hint.hidden = !(wbad && f.wc.trim()!=="");
+  var a = document.getElementById("saveBtn"), b = document.getElementById("moreBtn");
+  if(a) a.disabled = !ok; if(b) b.disabled = !ok;
+}
+
+function syncW(){
+  var f = ui.sheet.form;
+  sheetRoot.querySelectorAll('[data-act="pickW"]').forEach(function(b){ var on=b.dataset.id===f.w; b.classList.toggle("on",on); b.setAttribute("aria-pressed",on); });
+  var inp = document.getElementById("fWc"); if(inp) inp.classList.toggle("on", f.w==="custom");
+  syncSave();
+}
+
+function subjectSheet(){
+  var s = getSubj(ui.sheet.id); if(!s) return "";
+  var a = avg(s);
+  var list = s.grades.length
+    ? '<div class="gl">' + s.grades.slice().reverse().map(function(g){
+        var meta = [g.title, fmtDate(g.date)].filter(Boolean).join(" · ");
+        return '<div class="g">' +
+          '<button class="gmain" data-act="editGrade" data-id="'+g.id+'" aria-label="Note bearbeiten">' +
+            '<span class="n'+(g.note<4?' bad':'')+'">'+fmtNote(g.note)+'</span>' +
+            '<span><div class="t">'+(g.title?esc(g.title):'Ohne Name')+'</div>'+(g.date?'<div class="d">'+fmtDate(g.date)+'</div>':'')+'</span></button>' +
+          '<span class="w">'+esc(wLabel(g))+'</span>' +
+          '<button class="gdel" data-act="delRow" data-id="'+g.id+'" data-arm="Löschen?" aria-label="Note löschen">'+ICON_TRASH+'</button></div>';
+      }).join("") + '</div>'
+    : '<p class="empty">Noch keine Noten in diesem Fach.</p>';
+  return '<div class="scrim" data-act="close"></div>' +
+  '<div class="sheet" role="dialog" aria-modal="true" aria-label="'+esc(s.name)+'">' +
+    '<div class="grab"></div>' +
+    '<div class="sh-head"><h2>'+esc(s.name)+'</h2><button class="x" data-act="close" aria-label="Schliessen">'+ICON_X+'</button></div>' +
+    '<div class="stats">' +
+      '<div><div class="statv'+(a!==null&&a<4?' bad':'')+'">'+(a===null?"–":a.toFixed(2))+'</div><div class="statl">Durchschnitt</div></div>' +
+      '<div><div class="statv">'+(a===null?"–":fmtNote(zeugnis(a)))+'</div><div class="statl">Mögliche Zeugnisnote</div></div>' +
+    '</div>' +
+    '<div class="lbl">Niveau</div><div class="seg">' + NIV.map(function(n){
+      return '<button type="button" class="'+(s.niveau===n?'on':'')+'" data-act="niv" data-id="'+n+'" aria-pressed="'+(s.niveau===n)+'">'+n+'</button>';
+    }).join("") + '</div><div class="hint">'+NIVTXT[s.niveau]+'</div>' +
+    '<div class="lbl">Noten</div>' + list +
+    '<div class="actions"><button class="primary" data-act="addIn">Note hinzufügen</button></div>' +
+  '</div>';
+}
+
+function semSheet(){
+  var cur = curSem();
+  var rows = S.sems.map(function(m){
+    return '<button class="semRow'+(m.id===S.cur?' on':'')+'" data-act="pickSem" data-id="'+m.id+'"><span>'+esc(m.name)+'</span>'+(m.id===S.cur?ICON_OK:'')+'</button>';
+  }).join("");
+  return '<div class="scrim" data-act="close"></div>' +
+  '<div class="sheet" role="dialog" aria-modal="true" aria-label="Semester">' +
+    '<div class="grab"></div>' +
+    '<div class="sh-head"><h2>Semester</h2><button class="x" data-act="close" aria-label="Schliessen">'+ICON_X+'</button></div>' +
+    '<div style="margin-top:12px">'+rows+'</div>' +
+    '<label class="lbl" for="newName">Neues Semester</label>' +
+    '<div class="inline"><input type="text" id="newName" placeholder="z. B. 2. Semester 26/27" maxlength="40"><button class="secondary" data-act="newSem">Erstellen</button></div>' +
+    '<div class="hint">Fächer und Niveaus werden übernommen, die Noten starten leer.</div>' +
+    '<label class="lbl" for="renName">Aktuelles Semester umbenennen</label>' +
+    '<div class="inline"><input type="text" id="renName" maxlength="40" value="'+esc(cur.name)+'"><button class="secondary" data-act="renSem">Speichern</button></div>' +
+    (S.sems.length>1 ? '<div class="actions"><button class="danger" data-act="delSem" data-arm="Wirklich löschen? Alle Noten darin gehen verloren.">Aktuelles Semester löschen</button></div>' : '') +
+  '</div>';
+}
+
+function backupSheet(){
+  return '<div class="scrim" data-act="close"></div>' +
+  '<div class="sheet" role="dialog" aria-modal="true" aria-label="Daten sichern">' +
+    '<div class="grab"></div>' +
+    '<div class="sh-head"><h2>Daten sichern</h2><button class="x" data-act="close" aria-label="Schliessen">'+ICON_X+'</button></div>' +
+    '<p class="hint" style="margin:10px 0 12px">Deine Noten liegen nur in diesem Browser auf diesem Gerät. Kopiere den Text und bewahre ihn z. B. in einer Notiz auf. Zum Wiederherstellen fügst du ihn hier ein.</p>' +
+    '<textarea id="bk" spellcheck="false" aria-label="Sicherungstext">'+esc(JSON.stringify(S))+'</textarea>' +
+    '<div class="actions"><button class="primary" data-act="copy">Text kopieren</button>' +
+    '<button class="secondary" data-act="restore" data-arm="Wirklich ersetzen? Aktuelle Noten werden überschrieben.">Aus Text wiederherstellen</button></div>' +
+  '</div>';
+}
+
+/* ---------- Aktionen ---------- */
+function closeSheet(){
+  var b = ui.sheet && ui.sheet.back;
+  ui.sheet = b ? {type:"subject", id:b} : null;
+  renderSheet();
+}
+function openAdd(subjId, back, grade){
+  var f = {subj:subjId, note:"", w:"ganz", wc:"", title:"", date:"", edit:null};
+  if(grade){ f.note=grade.note; f.w=grade.w||"ganz"; f.wc=(grade.w==="custom" ? String(grade.wv) : ""); f.title=grade.title||""; f.date=grade.date||""; f.edit=grade.id; }
+  ui.sheet = {type:"add", form:f, back:back||null};
+  renderSheet();
+}
+
+function saveGrade(more){
+  var f = ui.sheet.form; if(f.note==="") return;
+  var s = getSubj(f.subj); if(!s) return;
+  var note = parseFloat(f.note);
+  var wv = f.w==="custom" ? parseWeight(f.wc) : null;
+  if(f.w==="custom" && wv===null) return;
+  var title = f.title.trim();
+  if(f.edit){
+    s.grades.forEach(function(g){ if(g.id===f.edit){ g.note=note; g.w=f.w; g.wv=wv; g.title=title; g.date=f.date; } });
+  } else {
+    s.grades.push({id:uid(), note:note, w:f.w, wv:wv, title:title, date:f.date, t:Date.now()});
+  }
+  S.last = s.id; save();
+  toast(s.name+": "+fmtNote(note)+" ("+wLabel({w:f.w, wv:wv})+") gespeichert");
+  if(more && !f.edit){
+    ui.sheet.form = {subj:s.id, note:"", w:"ganz", wc:"", title:"", date:"", edit:null};
+    render(); renderSheet();
+  } else {
+    var back = ui.sheet.back; ui.sheet = back ? {type:"subject", id:back} : null;
+    render(); renderSheet();
+  }
+}
+
+document.addEventListener("click", function(e){
+  var t = e.target.closest("[data-act]"); if(!t) return;
+  if(t.dataset.arm && t.dataset.armed!=="1"){
+    t.dataset.armed="1"; t.dataset.orig=t.innerHTML; t.textContent=t.dataset.arm;
+    setTimeout(function(){ if(t.isConnected && t.dataset.armed==="1"){ t.dataset.armed="0"; t.innerHTML=t.dataset.orig; } }, 4000);
+    return;
+  }
+  var a = t.dataset.act, id = t.dataset.id, sh = ui.sheet;
+  switch(a){
+    case "add": openAdd(getSubj(S.last) ? S.last : curSem().subjects[0].id, null); break;
+    case "open": ui.sheet = {type:"subject", id:id}; renderSheet(); break;
+    case "close": closeSheet(); break;
+    case "addIn": openAdd(sh.id, sh.id); break;
+    case "editGrade":
+      var s0 = getSubj(sh.id), g0 = s0.grades.filter(function(g){return g.id===id;})[0];
+      if(g0) openAdd(s0.id, s0.id, g0); break;
+    case "pickSubj":
+      sh.form.subj = id;
+      sheetRoot.querySelectorAll('[data-act="pickSubj"]').forEach(function(b){ var on=b.dataset.id===id; b.classList.toggle("on",on); b.setAttribute("aria-pressed",on); });
+      break;
+    case "pickW":
+      sh.form.w = id; sh.form.wc = "";
+      var wi = document.getElementById("fWc"); if(wi) wi.value = "";
+      syncW(); break;
+    case "delRow":
+      var sr = getSubj(sh.id); sr.grades = sr.grades.filter(function(g){ return g.id!==id; });
+      save(); toast("Note gelöscht"); refresh(); break;
+    case "save": saveGrade(false); break;
+    case "saveMore": saveGrade(true); break;
+    case "delGrade":
+      var sd = getSubj(sh.form.subj);
+      sd.grades = sd.grades.filter(function(g){ return g.id!==sh.form.edit; });
+      save(); toast("Note gelöscht");
+      var bk = sh.back; ui.sheet = bk ? {type:"subject", id:bk} : null; render(); renderSheet(); break;
+    case "niv": getSubj(sh.id).niveau = id; save(); refresh(); break;
+    case "semester": ui.sheet = {type:"semester"}; renderSheet(); break;
+    case "pickSem": S.cur = id; save(); ui.sheet = null; render(); renderSheet(); break;
+    case "newSem":
+      var nm = document.getElementById("newName").value.trim() || ("Semester "+(S.sems.length+1));
+      var nid = uid();
+      S.sems.push({id:nid, name:nm, subjects:curSem().subjects.map(function(s){ return {id:s.id, name:s.name, niveau:s.niveau, grades:[]}; })});
+      S.cur = nid; save(); ui.sheet = null; render(); renderSheet(); toast("Semester „"+nm+"“ erstellt"); break;
+    case "renSem":
+      var rn = document.getElementById("renName").value.trim();
+      if(rn){ curSem().name = rn; save(); ui.sheet = null; render(); renderSheet(); toast("Umbenannt"); } break;
+    case "delSem":
+      S.sems = S.sems.filter(function(m){ return m.id!==S.cur; });
+      S.cur = S.sems[0].id; save(); ui.sheet = null; render(); renderSheet(); toast("Semester gelöscht"); break;
+    case "backup": ui.sheet = {type:"backup"}; renderSheet(); break;
+    case "copy":
+      var ta = document.getElementById("bk");
+      var done = function(){ toast("Kopiert"); };
+      var fallback = function(){ ta.focus(); ta.select(); try{ document.execCommand("copy"); toast("Kopiert"); }catch(err){ toast("Text ist markiert, bitte manuell kopieren"); } };
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(ta.value).then(done, fallback); } else fallback();
+      break;
+    case "restore":
+      try{
+        var data = JSON.parse(document.getElementById("bk").value);
+        if(!valid(data)) throw new Error("bad");
+        S = data; if(!S.sems.some(function(m){return m.id===S.cur;})) S.cur = S.sems[0].id;
+        save(); ui.sheet = null; render(); renderSheet(); toast("Daten wiederhergestellt");
+      }catch(err){ toast("Der Text ist keine gültige Sicherung"); }
+      break;
+  }
+});
+
+function onField(e){
+  var t = e.target; if(!t.dataset || !t.dataset.f || !ui.sheet || ui.sheet.type!=="add") return;
+  var f = ui.sheet.form; f[t.dataset.f] = t.value;
+  if(t.dataset.f==="wc"){ if(t.value.trim()!=="") f.w="custom"; else if(f.w==="custom") f.w="ganz"; syncW(); }
+  else syncSave();
+}
+document.addEventListener("input", onField);
+document.addEventListener("change", onField);
+document.addEventListener("keydown", function(e){ if(e.key==="Escape" && ui.sheet) closeSheet(); });
+
+render();
+})();
+</script>
+</body>
+</html>
